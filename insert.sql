@@ -16,6 +16,7 @@ INSERT INTO colors VALUES
     (4, 'Khaki');
 INSERT INTO colors VALUES
     (5, 'Blue');
+SELECT setval('colors_color_id_seq', 5, true);
 
 --fabric
 INSERT INTO fabric VALUES
@@ -28,6 +29,7 @@ INSERT INTO fabric VALUES
     (4, 'Silk');
 INSERT INTO fabric VALUES
     (5, 'Tencel');
+SELECT setval('fabric_fabric_id_seq', 5, true);
 
 --locations
 INSERT INTO locations VALUES
@@ -40,6 +42,7 @@ INSERT INTO locations VALUES
     (4, 'Moskva');
 INSERT INTO locations VALUES
     (5, 'New York');
+SELECT setval('locations_location_id_seq', 5, true);
 
 --product_size
 INSERT INTO product_size VALUES
@@ -52,6 +55,7 @@ INSERT INTO product_size VALUES
     (4, 'XLarge');
 INSERT INTO product_size VALUES
     (5, 'XSmall');
+SELECT setval('product_size_size_id_seq', 5, true);
 
 --products
 INSERT INTO products VALUES
@@ -64,6 +68,7 @@ INSERT INTO products VALUES
     (4, 'Crisscross Open Back Dot Strappy Romper',120.20,4,4,4);
 INSERT INTO products VALUES
     (5, 'Paperbag Waist Tie Slim Fit Pants',130.50,5,5,5);
+SELECT setval('products_product_id_seq', 5, true);
 
 --stocks
 INSERT INTO stocks VALUES
@@ -76,3 +81,4 @@ INSERT INTO stocks VALUES
     (4,4,6,4);
 INSERT INTO stocks VALUES
     (5,5,12,5);
+SELECT setval('stocks_stocks_id_seq', 5, true);
