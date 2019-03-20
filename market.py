@@ -82,18 +82,60 @@ class Amount(Resource):
 class Set_Amount(Resource):
 	def put(self):
 		pg_cur = pg_con.cursor(cursor_factory=psycopg2.extras.DictCursor)
-		# print (flask.request.form['location_name'])
+		print (flask.request.form['amount'])
 		pg_cur.execute('''UPDATE stocks
 						set amount= amount - %(amount)s
 						where product_id=%(product_id)s 
 						and location_id=%(location_id)s
-						RETURNING amount''',
+						and (amount - %(amount)s) >= 0
+						RETURNING amount, product_id''',
 						{'amount': flask.request.form['amount'] ,
 						'product_id': flask.request.form['product_id'] ,
 						'location_id': flask.request.form['location_id']})
-		return {'amount': pg_cur.fetchone()['amount'],
-				'product_id': pg_cur.fetchone()['product_id'], 
-				'location_id': pg_cur.fetchone()['location_id']}
+		a = pg_cur.fetchone()		
+		if a is not None:
+			a = dict(a)
+			print("ira=" + str(a))
+			if a['amount'] == 0:
+				return{a['product_id']: 'Sold out'}
+			else:
+				return {'amount': a['amount'],
+					'product_id': a['product_id']
+					}
+		else:
+			return{flask.request.form['product_id']: 'Try to Sold overamount'}
+
+			#return{flask.request['product_id']: 'Sold out'}
+		# if a is not None:
+		# 	a = dict(pg_cur.fetchone())
+		# 	return {'amount': a['amount'],
+		# 		'product_id': a['product_id']
+		# 		}
+		# else:
+		# 	print('IRA')
+		# 	return{flask.request['product_id']: 'Sold out'}
+		# return {'amount': a['amount'],
+		# 		'product_id': a['product_id']
+		# 		}
+
+class Add_Amount(Resource):
+	def put(self):
+		pg_cur = pg_con.cursor(cursor_factory=psycopg2.extras.DictCursor)
+		print (flask.request.form['amount'])
+		print(pg_cur)
+		pg_cur.execute('''UPDATE stocks
+						set amount=%(amount)s
+						where product_id=%(product_id)s 
+						and location_id=%(location_id)s
+						RETURNING amount, product_id''',
+						{'amount': flask.request.form['amount'] ,
+						'product_id': flask.request.form['product_id'] ,
+						'location_id': flask.request.form['location_id']})
+		a = pg_cur.fetchone()
+		return {'amount': a['amount'],
+				'product_id': a['product_id']
+				}
+
 pg_con = psycopg2.connect(database='dev',
 						user='iradba',
 						password=os.getenv('MARKET_DB_PASS'),
@@ -107,7 +149,7 @@ api.add_resource(All_Products, '/all_products')
 api.add_resource(Amount, '/amount_product')
 api.add_resource(Check_Locations, '/check_locations')
 api.add_resource(Set_Amount, '/set_amount')
-
+api.add_resource(Add_Amount, '/add_amount')
 
 def f1():
 	return 1

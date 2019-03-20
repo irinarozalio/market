@@ -52,6 +52,6 @@ CREATE TABLE stocks
 (
     stocks_id SERIAL PRIMARY KEY NOT NULL,
     product_id INT REFERENCES products (product_id) NOT NULL,
-    amount INT NOT NULL,
+    amount INT CHECK (amount >= 0),
     location_id INT REFERENCES locations (location_id) NOT NULL
 );
