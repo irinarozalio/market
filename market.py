@@ -11,6 +11,7 @@ import traceback
 import os
 from dotenv import load_dotenv
 
+
 load_dotenv('.env')
 
 app = Flask(__name__)
@@ -79,31 +80,71 @@ class Amount(Resource):
 		row = pg_cur.fetchone()
 		return dict(row) if row else {'error': 'No Product Found'}
 
-class Set_Amount(Resource):
+class Reduce_Amount(Resource):
 	def put(self):
 		pg_cur = pg_con.cursor(cursor_factory=psycopg2.extras.DictCursor)
 		print (flask.request.form['amount'])
-		pg_cur.execute('''UPDATE stocks
-						set amount= amount - %(amount)s
+		pg_cur.execute('''SELECT product_id, amount from stocks 
+						where product_id=%(product_id)s
+						and location_id=%(location_id)s''',
+						{'product_id': flask.request.form['product_id'],
+						'location_id': flask.request.form['location_id']})
+		row = pg_cur.fetchone()
+		if row is None:
+			return [{'amount': flask.request.form['amount']},
+			        {flask.request['product_id']: 'Sold out'}]
+		else:
+			row = dict(row)
+			stock_amount = row['amount'] 
+			if stock_amount == 0:
+				return{row['product_id']: 'Not in stock'}
+			else:
+				remain = stock_amount - int(flask.request.form['amount'])
+				if remain > 0:
+					pg_cur.execute('''UPDATE stocks
+						set amount=%(remain)s
 						where product_id=%(product_id)s 
 						and location_id=%(location_id)s
-						and (amount - %(amount)s) >= 0
 						RETURNING amount, product_id''',
-						{'amount': flask.request.form['amount'] ,
-						'product_id': flask.request.form['product_id'] ,
+						{'remain': remain,
+						'product_id': flask.request.form['product_id'],
 						'location_id': flask.request.form['location_id']})
-		a = pg_cur.fetchone()		
-		if a is not None:
-			a = dict(a)
-			print("ira=" + str(a))
-			if a['amount'] == 0:
-				return{a['product_id']: 'Sold out'}
-			else:
-				return {'amount': a['amount'],
-					'product_id': a['product_id']
-					}
-		else:
-			return{flask.request.form['product_id']: 'Try to Sold overamount'}
+					return [{row['product_id']: 'Normal Sale'},
+							{'Remain': remain}]
+				else:
+					pg_cur.execute('''UPDATE stocks
+					set amount=0
+					where product_id=%(product_id)s 
+					and location_id=%(location_id)s
+					RETURNING amount, product_id''',
+					{'product_id': flask.request.form['product_id'],
+					'location_id': flask.request.form['location_id']})
+					if remain==0:
+						return [{row['product_id']: 'Sold out'}]
+					else:
+						return [{row['product_id']: 'Sold out'},
+								{'Overamount': int(flask.request.form['amount']) - stock_amount}]
+					
+		# pg_cur.execute('''UPDATE stocks
+		# 				set amount= amount - %(amount)s
+		# 				where product_id=%(product_id)s 
+		# 				and location_id=%(location_id)s
+		# 				and (amount - %(amount)s) >= 0
+		# 				RETURNING amount, product_id''',
+		# 				{'amount': flask.request.form['amount'] ,
+		# 				'product_id': flask.request.form['product_id'] ,
+		# 				'location_id': flask.request.form['location_id']})
+		# a = pg_cur.fetchone()		
+		# if a is not None:
+		# 	a = dict(a)
+		# 	if a['amount'] == 0:
+		# 		return{a['product_id']: 'Sold out'}
+		# 	else:
+		# 		return {'amount': a['amount'],
+		# 			'product_id': a['product_id']
+		# 			}
+		# else:
+		# 	return{flask.request.form['product_id']: 'Try to Sold overamount'}
 
 			#return{flask.request['product_id']: 'Sold out'}
 		# if a is not None:
@@ -119,6 +160,24 @@ class Set_Amount(Resource):
 		# 		}
 
 class Add_Amount(Resource):
+	def put(self):
+		pg_cur = pg_con.cursor(cursor_factory=psycopg2.extras.DictCursor)
+		print (flask.request.form['amount'])
+		print(pg_cur)
+		pg_cur.execute('''UPDATE stocks
+						set amount= amount + %(amount)s
+						where product_id=%(product_id)s 
+						and location_id=%(location_id)s
+						RETURNING amount, product_id''',
+						{'amount': flask.request.form['amount'] ,
+						'product_id': flask.request.form['product_id'] ,
+						'location_id': flask.request.form['location_id']})
+		a = pg_cur.fetchone()
+		return {'amount': a['amount'],
+				'product_id': a['product_id']
+				}
+
+class Set_Amount(Resource):
 	def put(self):
 		pg_cur = pg_con.cursor(cursor_factory=psycopg2.extras.DictCursor)
 		print (flask.request.form['amount'])
@@ -148,8 +207,9 @@ api.add_resource(Locations, '/locations')
 api.add_resource(All_Products, '/all_products')
 api.add_resource(Amount, '/amount_product')
 api.add_resource(Check_Locations, '/check_locations')
-api.add_resource(Set_Amount, '/set_amount')
+api.add_resource(Reduce_Amount, '/reduce_amount')
 api.add_resource(Add_Amount, '/add_amount')
+api.add_resource(Set_Amount, '/set_amount')
 
 def f1():
 	return 1
